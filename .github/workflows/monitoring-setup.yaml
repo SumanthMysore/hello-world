@@ -1,0 +1,35 @@
+name: Monitoring Setup - Prometheus & Grafana
+run-name: Monitoring stack setup triggered by ${{ github.actor }}.
+on:
+  workflow_dispatch:
+
+jobs:
+  monitoring-setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.EKS_CLUSTER_REGION }}
+
+      - name: Connect to EKS Cluster
+        run: aws eks update-kubeconfig --region ${{ secrets.EKS_CLUSTER_REGION }} --name ${{ secrets.EKS_CLUSTER_NAME }}
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+
+      - name: Add Prometheus Helm repo
+        run: |
+          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+          helm repo update
+
+      - name: Install kube-prometheus-stack
+        run: |
+          helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
+            --namespace monitoring \
+            --create-namespace \
+            --set prometheus.prometheusSpec.podMonitorSelectorNilUsesHelmValues=false \
+            --set prometheus.prometheusSpec.serviceMonitorSelectorNilUsesHelmValues=false \
+            --wait
