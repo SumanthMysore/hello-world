@@ -285,18 +285,3 @@ rate(http_requests_total[1m])
 # Node.js heap memory
 nodejs_heap_size_used_bytes
 ```
-
----
-
-## Known Limitations
-
-| Area | Limitation |
-|------|------------|
-| **IaC** | The EKS cluster IAM role (`aws_iam_role.eks_cluster`) is referenced in `eks.tf` but not defined in `iam.tf`. The cluster policy attachment (`eks_cluster_policy`) is also missing. Running `terraform apply` as-is will fail — the cluster IAM role and its policy attachment must be added to `iam.tf`. |
-| **IaC** | No Terraform remote backend is configured. State is stored locally by default. For team use, configure an S3 backend with DynamoDB locking. |
-| **IaC** | The VPC must exist before running Terraform. It is looked up by name tag (`kubernetes.io/role/elb=1` on subnets) and is not created by this code. |
-| **IaC** | No `AmazonEC2ContainerRegistryReadOnly` policy is attached to the node IAM role. This is only needed if pulling images from ECR; GHCR is used here so it is not blocking. |
-| **Helm** | Ingress is disabled (`ingress.enabled: false`). The app is only reachable via `kubectl port-forward` unless ingress is enabled with a configured controller. |
-| **Helm** | No resource requests or limits are set. Add them for production workloads. |
-| **Monitoring** | Grafana and Prometheus are only accessible via `kubectl port-forward`. No ingress is configured for the monitoring stack. |
-| **Pipeline** | `hello-world-deployment.yaml` has a path trigger referencing `hello-world-release.yaml` (the wrong filename). It should reference itself. |
